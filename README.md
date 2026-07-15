@@ -13,9 +13,11 @@ This custom integration removes the data limits of the default Home Assistant Op
    * Dew Point (`native_dew_point`)
    * Cloud Coverage (`cloud_coverage`)
    * Wind Gust Speed (`native_wind_gust_speed`)
+   * **Exposed Units of Measurement:** Custom attributes (`temperature_unit`, `humidity_unit`, `pressure_unit`, `wind_speed_unit`, `visibility_unit`, `precipitation_unit`) are directly exposed under the weather entity's `extra_state_attributes` for easy access in custom cards and automations.
    * *Hourly and daily forecast data structures have been expanded to include all of these new attributes as well.*
 
 2. **Standalone Sensors (Platform: Sensor):** For easy charting (history graphs) and automations, independent sensor entities are created for each variable:
+   * `sensor.[zone]_temperature` (Temperature - °C)
    * `sensor.[zone]_humidity` (Humidity - %)
    * `sensor.[zone]_pressure` (Pressure - hPa)
    * `sensor.[zone]_apparent_temperature` (Apparent Temperature - °C)
@@ -34,7 +36,16 @@ This custom integration removes the data limits of the default Home Assistant Op
 
 4. **Multi-Model Setup Support:** You can set up multiple integration instances for the same Home Assistant Zone using different forecast models. This allows you to compare different weather models side-by-side on your dashboards!
 
-5. **Dynamic Day/Night Icons:** Correctly maps clear sky conditions to `sunny` during the day and `clear-night` (moon icon) at night for both current conditions and hourly forecasts, matching the API's astronomical day/night calculations.
+5. **Dynamic Day/Night Icons:** Correctly maps clear sky conditions to `sunny` during the day and `clear-night` (moon icon) at night for current conditions, hourly forecasts, and today's daily forecast card, matching the API's astronomical day/night calculations.
+
+6. **FlatBuffers Binary Protocol:** Swapped from standard JSON queries to binary FlatBuffers (`openmeteo-sdk`) payloads, enabling ultra-fast, zero-copy parsing and reduced network data overhead.
+
+7. **Configurable Update Interval:** Selectable polling intervals (15, 30, or 60 minutes) to suit your API usage preference.
+
+8. **Timezone Support:** Option to request weather forecasts aligned to your Home Assistant's local timezone for accurate calendar-day forecast aggregations.
+
+9. **Diagnostics Support:** Integration diagnostics are supported out of the box with built-in coordinate filtering to protect your geographical privacy.
+
 
 ---
 
@@ -66,19 +77,21 @@ If you have SSH/Terminal access or a file manager (like File Editor or Samba sha
 3. If it does not exist, create a folder named `custom_components`.
 4. Copy the `open_meteo_custom` folder inside `custom_components`. The file structure must look like this:
    ```text
-   config/
-   └── custom_components/
-       └── open_meteo_custom/
-           ├── __init__.py
-           ├── const.py
-           ├── config_flow.py
-           ├── coordinator.py
-           ├── weather.py
-           ├── sensor.py
-           ├── manifest.json
-           └── translations/
-               ├── en.json
-               └── tr.json
+    config/
+    └── custom_components/
+        └── open_meteo_custom/
+            ├── __init__.py
+            ├── const.py
+            ├── config_flow.py
+            ├── coordinator.py
+            ├── diagnostics.py
+            ├── weather.py
+            ├── sensor.py
+            ├── manifest.json
+            ├── strings.json
+            └── translations/
+                ├── en.json
+                └── tr.json
    ```
 5. Restart Home Assistant.
 
