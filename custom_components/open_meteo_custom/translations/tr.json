@@ -58,8 +58,7 @@
               "gfs_global": "Ulusal Okyanus ve Atmosfer İdaresi'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (GFS)",
               "meteofrance_seamless": "Météo-France'tan hava durumu tahmini, Open-Meteo tarafından sunulmuştur (Seamless)",
               "gem_seamless": "Kanada Çevre ve İklim Değişikliği'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (GEM)",
-              "ukmo_seamless": "Birleşik Krallık Meteoroloji Ofisi'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (Seamless)",
-              "fallback": "{model} modelinden hava durumu tahmini, Open-Meteo tarafından sunulmuştur"
+              "ukmo_seamless": "Birleşik Krallık Meteoroloji Ofisi'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (Seamless)"
             }
           }
         }

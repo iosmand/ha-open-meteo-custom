@@ -80,8 +80,6 @@ class OpenMeteoCustomWeatherEntity(
         model = self.coordinator.config_entry.data.get(CONF_MODEL, "best_match")
         if self._attribution_translations and model in self._attribution_translations:
             self._attr_attribution = self._attribution_translations[model]
-        elif self._attribution_translations and "fallback" in self._attribution_translations:
-            self._attr_attribution = self._attribution_translations["fallback"].format(model=model)
         else:
             # Fallback to English hardcoded value if translations are not loaded
             if model == "best_match":
