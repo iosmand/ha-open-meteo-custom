@@ -19,6 +19,11 @@ async def test_sensor_entities(
     await hass.async_block_till_done()
 
     # Verify sensor states are correctly set from FlatBuffers data
+    temp_state = hass.states.get("sensor.home_best_match_auto_temperature")
+    assert temp_state is not None
+    assert float(temp_state.state) == pytest.approx(28.35, abs=0.1)
+    assert temp_state.attributes["unit_of_measurement"] == "°C"
+
     humidity_state = hass.states.get("sensor.home_best_match_auto_humidity")
     assert humidity_state is not None
     assert humidity_state.state == "32.0"

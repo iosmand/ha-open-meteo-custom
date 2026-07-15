@@ -36,6 +36,15 @@ class OpenMeteoCustomSensorEntityDescription(SensorEntityDescription):
 
 SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] = (
     OpenMeteoCustomSensorEntityDescription(
+        key="temperature",
+        name="Temperature",
+        translation_key="temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.temperature,
+    ),
+    OpenMeteoCustomSensorEntityDescription(
         key="humidity",
         name="Humidity",
         translation_key="humidity",
