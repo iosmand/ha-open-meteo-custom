@@ -53,3 +53,13 @@ async def test_sensor_entities(
     assert wind_gust_state is not None
     assert float(wind_gust_state.state) == pytest.approx(22.68, abs=0.1)
     assert wind_gust_state.attributes["unit_of_measurement"] == "km/h"
+
+    wind_speed_state = hass.states.get("sensor.home_best_match_auto_wind_speed")
+    assert wind_speed_state is not None
+    assert float(wind_speed_state.state) == pytest.approx(7.69, abs=0.1)
+    assert wind_speed_state.attributes["unit_of_measurement"] == "km/h"
+
+    visibility_state = hass.states.get("sensor.home_best_match_auto_visibility")
+    assert visibility_state is not None
+    assert float(visibility_state.state) == pytest.approx(46.4, abs=0.1)
+    assert visibility_state.attributes["unit_of_measurement"] == "km"

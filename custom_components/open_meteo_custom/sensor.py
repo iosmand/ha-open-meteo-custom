@@ -14,6 +14,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     PERCENTAGE,
+    UnitOfLength,
     UnitOfPressure,
     UnitOfSpeed,
     UnitOfTemperature,
@@ -96,6 +97,24 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.wind_gust_speed,
+    ),
+    OpenMeteoCustomSensorEntityDescription(
+        key="wind_speed",
+        name="Wind Speed",
+        translation_key="wind_speed",
+        device_class=SensorDeviceClass.WIND_SPEED,
+        native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.wind_speed,
+    ),
+    OpenMeteoCustomSensorEntityDescription(
+        key="visibility",
+        name="Visibility",
+        translation_key="visibility",
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.visibility / 1000 if data.visibility is not None else None,
     ),
 )
 

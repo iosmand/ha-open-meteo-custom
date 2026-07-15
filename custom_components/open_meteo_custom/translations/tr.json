@@ -38,6 +38,12 @@
       },
       "wind_gust": {
         "name": "Rüzgar Hamlesi"
+      },
+      "wind_speed": {
+        "name": "Rüzgar Hızı"
+      },
+      "visibility": {
+        "name": "Görüş Mesafesi"
       }
     },
     "weather": {
