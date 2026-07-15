@@ -82,6 +82,7 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[Forecast]):
             query_params["models"] = model
 
         url = URL("https://api.open-meteo.com/v1/forecast").with_query(query_params)
+        LOGGER.debug("Fetching Open-Meteo forecast URL: %s", url)
 
         try:
             raw_data = await self.open_meteo._request(url=url)
@@ -90,6 +91,8 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[Forecast]):
             return Forecast.from_dict(cleaned_dict)
         except OpenMeteoError as err:
             raise UpdateFailed(f"Open-Meteo API communication error: {err}") from err
+        except Exception as err:
+            raise UpdateFailed(f"Unexpected error updating Open-Meteo data: {err}") from err
 
     @property
     def current_hourly_index(self) -> int | None:
@@ -124,7 +127,8 @@ def clean_forecast_data(data_dict: dict) -> dict:
     if "hourly" in data_dict and isinstance(data_dict["hourly"], dict):
         hourly = data_dict["hourly"]
         if "time" in hourly and isinstance(hourly["time"], list):
-            max_len = len(hourly["time"])
+            original_len = len(hourly["time"])
+            max_len = original_len
             check_keys = ["temperature_2m", "weathercode", "relativehumidity_2m"]
             for key in check_keys:
                 if key in hourly and isinstance(hourly[key], list):
@@ -132,6 +136,8 @@ def clean_forecast_data(data_dict: dict) -> dict:
                         if val is None:
                             max_len = min(max_len, idx)
                             break
+            if max_len < original_len:
+                LOGGER.debug("Hourly forecast truncated from %d to %d elements due to null values", original_len, max_len)
             for key, val_list in hourly.items():
                 if isinstance(val_list, list):
                     hourly[key] = val_list[:max_len]
@@ -140,7 +146,8 @@ def clean_forecast_data(data_dict: dict) -> dict:
     if "daily" in data_dict and isinstance(data_dict["daily"], dict):
         daily = data_dict["daily"]
         if "time" in daily and isinstance(daily["time"], list):
-            max_len = len(daily["time"])
+            original_len = len(daily["time"])
+            max_len = original_len
             check_keys = ["temperature_2m_max", "weathercode"]
             for key in check_keys:
                 if key in daily and isinstance(daily[key], list):
@@ -148,6 +155,8 @@ def clean_forecast_data(data_dict: dict) -> dict:
                         if val is None:
                             max_len = min(max_len, idx)
                             break
+            if max_len < original_len:
+                LOGGER.debug("Daily forecast truncated from %d to %d elements due to null values", original_len, max_len)
             for key, val_list in daily.items():
                 if isinstance(val_list, list):
                     daily[key] = val_list[:max_len]
