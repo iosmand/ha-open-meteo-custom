@@ -1,0 +1,40 @@
+name: Dependabot Manifest Sync
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Sync manifest.json with requirements.txt
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run sync script
+        run: python scripts/sync_manifest.py
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --exit-code custom_components/open_meteo_custom/manifest.json; then
+            git add custom_components/open_meteo_custom/manifest.json
+            git commit -m "Auto-sync manifest.json with Dependabot requirements.txt update"
+            git push
+          else
+            echo "No changes to commit"
+          fi
