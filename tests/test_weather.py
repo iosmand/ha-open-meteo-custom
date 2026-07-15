@@ -54,6 +54,12 @@ async def test_weather_entity_properties(
     assert attributes[ATTR_WEATHER_WIND_BEARING] == pytest.approx(10.78, abs=0.1)
     assert attributes[ATTR_WEATHER_UV_INDEX] == pytest.approx(0.0, abs=0.1)
     assert attributes[ATTR_WEATHER_CLOUD_COVERAGE] == 0
+    assert attributes["temperature_unit"] == "°C"
+    assert attributes["humidity_unit"] == "%"
+    assert attributes["pressure_unit"] == "hPa"
+    assert attributes["wind_speed_unit"] == "km/h"
+    assert attributes["visibility_unit"] == "km"
+    assert attributes["precipitation_unit"] == "mm"
 
 async def test_weather_forecast(
     hass: HomeAssistant,

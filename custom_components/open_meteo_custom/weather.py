@@ -10,6 +10,7 @@ from homeassistant.components.weather import (
     WeatherEntityFeature,
 )
 from homeassistant.const import (
+    PERCENTAGE,
     UnitOfLength,
     UnitOfPrecipitationDepth,
     UnitOfPressure,
@@ -204,6 +205,19 @@ class OpenMeteoCustomWeatherEntity(
     def uv_index(self) -> float | None:
         """Return the UV index."""
         return self.coordinator.data.uv_index
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return entity specific state attributes."""
+        return {
+            "temperature_unit": self._temperature_unit,
+            "humidity_unit": PERCENTAGE,
+            "pressure_unit": self._pressure_unit,
+            "wind_speed_unit": self._wind_speed_unit,
+            "visibility_unit": self._visibility_unit,
+            "precipitation_unit": self._precipitation_unit,
+        }
 
     @callback
     @override

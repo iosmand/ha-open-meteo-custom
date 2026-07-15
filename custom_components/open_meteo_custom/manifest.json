@@ -2,7 +2,7 @@
   "domain": "open_meteo_custom",
   "name": "Open-Meteo Custom",
   "requirements": ["openmeteo-sdk==1.27.2"],
-  "version": "1.0.9",
+  "version": "1.0.10",
   "codeowners": ["@iosmand"],
   "config_flow": true,
   "dependencies": ["zone"],
