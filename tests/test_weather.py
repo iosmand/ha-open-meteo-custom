@@ -78,7 +78,7 @@ async def test_weather_forecast(
     assert daily_forecasts is not None
     assert len(daily_forecasts) == 7
     first_day = daily_forecasts[0]
-    assert first_day[ATTR_FORECAST_CONDITION] == "sunny"
+    assert first_day[ATTR_FORECAST_CONDITION] == "clear-night"
     assert first_day[ATTR_FORECAST_NATIVE_TEMP] == pytest.approx(34.7, abs=0.1)
 
     # Test hourly forecast method

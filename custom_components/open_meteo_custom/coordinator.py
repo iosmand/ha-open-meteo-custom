@@ -285,6 +285,7 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[OpenMeteoData])
         tz = timezone(timedelta(seconds=offset_sec)) if offset_sec is not None else timezone.utc
 
         # Current weather
+        current_is_day: bool = True
         condition: str | None = None
         current_fields: dict[str, float | None] = {
             data_key: None for _, data_key, _ in _CURRENT_MAP if data_key is not None
@@ -294,7 +295,8 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[OpenMeteoData])
             id_var = _find_variable(current, "is_day")
             wc_val = wc_var.Value() if wc_var is not None else 0
             id_val = id_var.Value() if id_var is not None else True
-            condition = resolve_condition(int(wc_val), bool(id_val))
+            current_is_day = bool(id_val)
+            condition = resolve_condition(int(wc_val), current_is_day)
 
             for api_name, data_key, conv in _CURRENT_MAP:
                 if data_key is not None:
@@ -315,7 +317,10 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[OpenMeteoData])
             if wc_var is not None:
                 for i, entry in enumerate(daily_forecast):
                     if i < wc_var.ValuesLength():
-                        entry[CONDITION] = resolve_condition(int(wc_var.Values(i)))
+                        entry[CONDITION] = resolve_condition(
+                            int(wc_var.Values(i)),
+                            current_is_day if i == 0 else None,
+                        )
             for api_name, ha_key, conv in _DAILY_MAP:
                 if ha_key is not None:
                     var = _find_variable(daily, api_name)
