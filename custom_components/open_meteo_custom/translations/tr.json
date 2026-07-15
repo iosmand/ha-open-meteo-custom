@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Open-Meteo Custom Ayarları",
+        "description": "Lütfen hava durumu verisi çekmek istediğiniz bölgeyi ve hava tahmin modelini seçin.",
+        "data": {
+          "zone": "Bölge",
+          "model": "Tahmin Modeli"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Bu bölge ve tahmin modeli kombinasyonu zaten yapılandırılmış."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "humidity": {
+        "name": "Nem"
+      },
+      "pressure": {
+        "name": "Basınç"
+      },
+      "apparent_temperature": {
+        "name": "Hissedilen Sıcaklık"
+      },
+      "dew_point": {
+        "name": "Çiy Noktası"
+      },
+      "cloud_cover": {
+        "name": "Bulut Oranı"
+      },
+      "wind_gust": {
+        "name": "Rüzgar Hamlesi"
+      }
+    }
+  }
+}

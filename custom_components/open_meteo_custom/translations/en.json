@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Open-Meteo Custom Settings",
+        "description": "Please select the zone and forecast model you want to retrieve weather data for.",
+        "data": {
+          "zone": "Zone",
+          "model": "Forecast Model"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This zone and forecast model combination is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "humidity": {
+        "name": "Humidity"
+      },
+      "pressure": {
+        "name": "Pressure"
+      },
+      "apparent_temperature": {
+        "name": "Apparent Temperature"
+      },
+      "dew_point": {
+        "name": "Dew Point"
+      },
+      "cloud_cover": {
+        "name": "Cloud Cover"
+      },
+      "wind_gust": {
+        "name": "Wind Gust"
+      }
+    }
+  }
+}

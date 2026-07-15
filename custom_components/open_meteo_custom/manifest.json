@@ -1,0 +1,8 @@
+{
+  "domain": "open_meteo_custom",
+  "name": "Open-Meteo Custom",
+  "requirements": ["open-meteo==0.3.2"],
+  "version": "1.0.0",
+  "codeowners": ["@i0s"],
+  "config_flow": true
+}
