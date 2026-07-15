@@ -1,8 +1,50 @@
 import asyncio
 import sys
+import json
 from yarl import URL
 from aiohttp import ClientSession
 from open_meteo import Forecast, OpenMeteo, OpenMeteoError
+
+def clean_forecast_data(data_dict: dict) -> dict:
+    """Clean the forecast data dictionary to prevent Mashumaro deserialization errors.
+
+    Regional models return null (None) values at the end of their forecast lists
+    for days beyond their forecast horizon. This function truncates these lists
+    to the maximum length of continuous non-null data.
+    """
+    # Clean hourly data
+    if "hourly" in data_dict and isinstance(data_dict["hourly"], dict):
+        hourly = data_dict["hourly"]
+        if "time" in hourly and isinstance(hourly["time"], list):
+            max_len = len(hourly["time"])
+            check_keys = ["temperature_2m", "weathercode", "relativehumidity_2m"]
+            for key in check_keys:
+                if key in hourly and isinstance(hourly[key], list):
+                    for idx, val in enumerate(hourly[key]):
+                        if val is None:
+                            max_len = min(max_len, idx)
+                            break
+            for key, val_list in hourly.items():
+                if isinstance(val_list, list):
+                    hourly[key] = val_list[:max_len]
+
+    # Clean daily data
+    if "daily" in data_dict and isinstance(data_dict["daily"], dict):
+        daily = data_dict["daily"]
+        if "time" in daily and isinstance(daily["time"], list):
+            max_len = len(daily["time"])
+            check_keys = ["temperature_2m_max", "weathercode"]
+            for key in check_keys:
+                if key in daily and isinstance(daily[key], list):
+                    for idx, val in enumerate(daily[key]):
+                        if val is None:
+                            max_len = min(max_len, idx)
+                            break
+            for key, val_list in daily.items():
+                if isinstance(val_list, list):
+                    daily[key] = val_list[:max_len]
+
+    return data_dict
 
 # List of 5 target locations across the world with specific models
 TEST_LOCATIONS = [
@@ -31,7 +73,7 @@ TEST_LOCATIONS = [
         "name": "London, UK",
         "latitude": 51.5074,
         "longitude": -0.1278,
-        "model": "ukmo_global",
+        "model": "ukmo_seamless",
         "should_succeed": True
     },
     {
@@ -91,8 +133,10 @@ async def run_test_for_location(session, client, loc):
     url = URL("https://api.open-meteo.com/v1/forecast").with_query(query_params)
     
     try:
-        data = await client._request(url=url)
-        forecast = Forecast.from_json(data)
+        raw_data = await client._request(url=url)
+        data_dict = json.loads(raw_data)
+        cleaned_dict = clean_forecast_data(data_dict)
+        forecast = Forecast.from_dict(cleaned_dict)
         
         # Verify success case
         if not loc["should_succeed"]:

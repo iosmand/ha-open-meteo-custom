@@ -1,5 +1,6 @@
 """DataUpdateCoordinator for the Open-Meteo Custom integration."""
 
+import json
 from typing import override
 from yarl import URL
 
@@ -83,8 +84,10 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[Forecast]):
         url = URL("https://api.open-meteo.com/v1/forecast").with_query(query_params)
 
         try:
-            data = await self.open_meteo._request(url=url)
-            return Forecast.from_json(data)
+            raw_data = await self.open_meteo._request(url=url)
+            data_dict = json.loads(raw_data)
+            cleaned_dict = clean_forecast_data(data_dict)
+            return Forecast.from_dict(cleaned_dict)
         except OpenMeteoError as err:
             raise UpdateFailed(f"Open-Meteo API communication error: {err}") from err
 
@@ -108,4 +111,46 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[Forecast]):
                 closest_index = index
 
         return closest_index
+
+
+def clean_forecast_data(data_dict: dict) -> dict:
+    """Clean the forecast data dictionary to prevent Mashumaro deserialization errors.
+
+    Regional models return null (None) values at the end of their forecast lists
+    for days beyond their forecast horizon. This function truncates these lists
+    to the maximum length of continuous non-null data.
+    """
+    # Clean hourly data
+    if "hourly" in data_dict and isinstance(data_dict["hourly"], dict):
+        hourly = data_dict["hourly"]
+        if "time" in hourly and isinstance(hourly["time"], list):
+            max_len = len(hourly["time"])
+            check_keys = ["temperature_2m", "weathercode", "relativehumidity_2m"]
+            for key in check_keys:
+                if key in hourly and isinstance(hourly[key], list):
+                    for idx, val in enumerate(hourly[key]):
+                        if val is None:
+                            max_len = min(max_len, idx)
+                            break
+            for key, val_list in hourly.items():
+                if isinstance(val_list, list):
+                    hourly[key] = val_list[:max_len]
+
+    # Clean daily data
+    if "daily" in data_dict and isinstance(data_dict["daily"], dict):
+        daily = data_dict["daily"]
+        if "time" in daily and isinstance(daily["time"], list):
+            max_len = len(daily["time"])
+            check_keys = ["temperature_2m_max", "weathercode"]
+            for key in check_keys:
+                if key in daily and isinstance(daily[key], list):
+                    for idx, val in enumerate(daily[key]):
+                        if val is None:
+                            max_len = min(max_len, idx)
+                            break
+            for key, val_list in daily.items():
+                if isinstance(val_list, list):
+                    daily[key] = val_list[:max_len]
+
+    return data_dict
 
