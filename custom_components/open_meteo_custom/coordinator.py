@@ -11,7 +11,7 @@ from open_meteo import (
 )
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ZONE, EntityStateAttribute
+from homeassistant.const import ATTR_LATITUDE, ATTR_LONGITUDE, CONF_ZONE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -45,8 +45,8 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[Forecast]):
         if (zone := self.hass.states.get(self.config_entry.data[CONF_ZONE])) is None:
             raise UpdateFailed(f"Zone '{self.config_entry.data[CONF_ZONE]}' not found")
 
-        latitude = zone.attributes[EntityStateAttribute.LATITUDE]
-        longitude = zone.attributes[EntityStateAttribute.LONGITUDE]
+        latitude = zone.attributes[ATTR_LATITUDE]
+        longitude = zone.attributes[ATTR_LONGITUDE]
         model = self.config_entry.data.get(CONF_MODEL, "best_match")
 
         query_params = {
