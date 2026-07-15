@@ -91,6 +91,31 @@ class OpenMeteoCustomWeatherEntity(
 
     @property
     @override
+    def attribution(self) -> str | None:
+        """Return the attribution."""
+        model = self.coordinator.config_entry.data.get(CONF_MODEL, "best_match")
+        
+        if model == "best_match":
+            return "Weather forecast from Open-Meteo (Best Match Auto-Selection)"
+        elif model == "dwd_icon_eu":
+            return "Weather forecast from Deutscher Wetterdienst, delivered by Open-Meteo (ICON Europe)"
+        elif model == "dwd_icon":
+            return "Weather forecast from Deutscher Wetterdienst, delivered by Open-Meteo (ICON Global)"
+        elif model == "ecmwf_ifs":
+            return "Weather forecast from European Centre for Medium-Range Weather Forecasts, delivered by Open-Meteo (ECMWF)"
+        elif model == "gfs_global":
+            return "Weather forecast from National Oceanic and Atmospheric Administration, delivered by Open-Meteo (GFS)"
+        elif model == "meteofrance_seamless":
+            return "Weather forecast from Météo-France, delivered by Open-Meteo (Seamless)"
+        elif model == "gem_seamless":
+            return "Weather forecast from Environment and Climate Change Canada, delivered by Open-Meteo (GEM)"
+        elif model == "ukmo_seamless":
+            return "Weather forecast from UK Met Office, delivered by Open-Meteo (Seamless)"
+            
+        return f"Weather forecast from {model}, delivered by Open-Meteo"
+
+    @property
+    @override
     def condition(self) -> str | None:
         """Return the current condition."""
         if not self.coordinator.data.current_weather:
@@ -220,7 +245,7 @@ class OpenMeteoCustomWeatherEntity(
                 forecast["native_temperature"] = daily.temperature_2m_max[index]
 
             if daily.temperature_2m_min is not None:
-                forecast["native_temp_low"] = daily.temperature_2m_min[index]
+                forecast["native_templow"] = daily.temperature_2m_min[index]
 
             if daily.wind_direction_10m_dominant is not None:
                 forecast["wind_bearing"] = daily.wind_direction_10m_dominant[index]
