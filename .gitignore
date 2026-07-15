@@ -2,3 +2,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 .DS_Store
+.pytest_cache/
+.venv/
+.coverage
+htmlcov/
+.mypy_cache/
+AGENTS.md

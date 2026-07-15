@@ -15,7 +15,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
 )
 
-from .const import CONF_MODEL, DOMAIN, MODELS
+from .const import CONF_MODEL, CONF_UPDATE_INTERVAL, CONF_USE_HA_TIMEZONE, DOMAIN, MODELS
 
 
 class OpenMeteoCustomFlowHandler(ConfigFlow, domain=DOMAIN):
@@ -45,6 +45,8 @@ class OpenMeteoCustomFlowHandler(ConfigFlow, domain=DOMAIN):
                 data={
                     CONF_ZONE: zone_id,
                     CONF_MODEL: model,
+                    CONF_UPDATE_INTERVAL: int(user_input[CONF_UPDATE_INTERVAL]),
+                    CONF_USE_HA_TIMEZONE: user_input[CONF_USE_HA_TIMEZONE],
                 },
             )
 
@@ -64,6 +66,18 @@ class OpenMeteoCustomFlowHandler(ConfigFlow, domain=DOMAIN):
                             mode=SelectSelectorMode.DROPDOWN,
                         ),
                     ),
+                    vol.Required(CONF_UPDATE_INTERVAL, default="30"): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                {"label": "15 Minutes", "value": "15"},
+                                {"label": "30 Minutes", "value": "30"},
+                                {"label": "60 Minutes", "value": "60"},
+                            ],
+                            mode=SelectSelectorMode.DROPDOWN,
+                        ),
+                    ),
+                    vol.Required(CONF_USE_HA_TIMEZONE, default=True): bool,
                 }
             ),
         )
+

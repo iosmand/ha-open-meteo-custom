@@ -15,29 +15,29 @@ def main():
         print("manifest.json not found")
         return
 
-    # Parse requirements.txt for open-meteo version
+    # Parse requirements.txt for openmeteo-sdk version
     open_meteo_ver = None
     with open(req_file, "r") as f:
         for line in f:
-            match = re.match(r"^open-meteo\s*==\s*([0-9a-zA-Z\.\-]+)", line.strip())
+            match = re.match(r"^openmeteo-sdk\s*==\s*([0-9a-zA-Z\.\-]+)", line.strip())
             if match:
                 open_meteo_ver = match.group(1)
                 break
 
     if not open_meteo_ver:
-        print("open-meteo version not found in requirements.txt")
+        print("openmeteo-sdk version not found in requirements.txt")
         return
 
     # Load and update manifest.json
     with open(manifest_file, "r") as f:
         manifest = json.load(f)
 
-    # Find the open-meteo requirement in requirements list
+    # Find the openmeteo-sdk requirement in requirements list
     requirements = manifest.get("requirements", [])
     updated = False
     for idx, req in enumerate(requirements):
-        if req.startswith("open-meteo=="):
-            new_req = f"open-meteo=={open_meteo_ver}"
+        if req.startswith("openmeteo-sdk=="):
+            new_req = f"openmeteo-sdk=={open_meteo_ver}"
             if req != new_req:
                 requirements[idx] = new_req
                 updated = True

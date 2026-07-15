@@ -1,173 +1,364 @@
 """DataUpdateCoordinator for the Open-Meteo Custom integration."""
 
-import json
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from typing import override
-from yarl import URL
 
-from open_meteo import (
+from openmeteo_sdk.WeatherApiResponse import WeatherApiResponse
+from openmeteo_sdk.Variable import Variable as OMVariable
+from openmeteo_sdk.Aggregation import Aggregation as OMAggregation
+
+# Map API string parameter to FlatBuffers Variable identifiers: (variable_id, altitude, aggregation_id)
+_API_TO_FB_METADATA = {
+    # Current/Hourly
+    "weather_code": (OMVariable.weather_code, 0, OMAggregation.none),
+    "is_day": (OMVariable.is_day, 0, OMAggregation.none),
+    "cloud_cover": (OMVariable.cloud_cover, 0, OMAggregation.none),
+    "relative_humidity_2m": (OMVariable.relative_humidity, 2, OMAggregation.none),
+    "apparent_temperature": (OMVariable.apparent_temperature, 2, OMAggregation.none),
+    "dew_point_2m": (OMVariable.dew_point, 2, OMAggregation.none),
+    "precipitation": (OMVariable.precipitation, 0, OMAggregation.none),
+    "pressure_msl": (OMVariable.pressure_msl, 0, OMAggregation.none),
+    "temperature_2m": (OMVariable.temperature, 2, OMAggregation.none),
+    "visibility": (OMVariable.visibility, 0, OMAggregation.none),
+    "wind_gusts_10m": (OMVariable.wind_gusts, 10, OMAggregation.none),
+    "wind_speed_10m": (OMVariable.wind_speed, 10, OMAggregation.none),
+    "precipitation_probability": (OMVariable.precipitation_probability, 0, OMAggregation.none),
+    "uv_index": (OMVariable.uv_index, 0, OMAggregation.none),
+    "wind_direction_10m": (OMVariable.wind_direction, 10, OMAggregation.none),
+    
+    # Daily
+    "cloud_cover_mean": (OMVariable.cloud_cover, 0, OMAggregation.mean),
+    "relative_humidity_2m_mean": (OMVariable.relative_humidity, 2, OMAggregation.mean),
+    "apparent_temperature_mean": (OMVariable.apparent_temperature, 2, OMAggregation.mean),
+    "dew_point_2m_mean": (OMVariable.dew_point, 2, OMAggregation.mean),
+    "precipitation_sum": (OMVariable.precipitation, 0, OMAggregation.sum),
+    "pressure_msl_mean": (OMVariable.pressure_msl, 0, OMAggregation.mean),
+    "temperature_2m_max": (OMVariable.temperature, 2, OMAggregation.maximum),
+    "temperature_2m_min": (OMVariable.temperature, 2, OMAggregation.minimum),
+    "wind_gusts_10m_max": (OMVariable.wind_gusts, 10, OMAggregation.maximum),
+    "wind_speed_10m_max": (OMVariable.wind_speed, 10, OMAggregation.maximum),
+    "precipitation_probability_max": (OMVariable.precipitation_probability, 0, OMAggregation.maximum),
+    "uv_index_max": (OMVariable.uv_index, 0, OMAggregation.maximum),
+    "wind_direction_10m_dominant": (OMVariable.wind_direction, 10, OMAggregation.dominant),
+}
+
+
+def _find_variable(variables_container, name: str):
+    """Find a variable by name in the FlatBuffers variables container."""
+    if variables_container is None:
+        return None
+    meta = _API_TO_FB_METADATA.get(name)
+    if not meta:
+        return None
+    var_id, altitude, aggregation_id = meta
+    # Try exact match first
+    for i in range(variables_container.VariablesLength()):
+        var = variables_container.Variables(i)
+        if (var is not None 
+            and var.Variable() == var_id 
+            and var.Altitude() == altitude 
+            and var.Aggregation() == aggregation_id):
+            return var
+    # Fall back to matching variable and aggregation (ignoring altitude)
+    for i in range(variables_container.VariablesLength()):
+        var = variables_container.Variables(i)
+        if (var is not None 
+            and var.Variable() == var_id 
+            and var.Aggregation() == aggregation_id):
+            return var
+    # Fall back to matching just variable (ignoring altitude and aggregation)
+    for i in range(variables_container.VariablesLength()):
+        var = variables_container.Variables(i)
+        if var is not None and var.Variable() == var_id:
+            return var
+    return None
+
+from homeassistant.components.weather import (
+    ATTR_FORECAST_CLOUD_COVERAGE as CLOUD_COVERAGE,
+    ATTR_FORECAST_CONDITION as CONDITION,
+    ATTR_FORECAST_HUMIDITY as HUMIDITY,
+    ATTR_FORECAST_NATIVE_APPARENT_TEMP as NATIVE_APPARENT_TEMP,
+    ATTR_FORECAST_NATIVE_DEW_POINT as NATIVE_DEW_POINT,
+    ATTR_FORECAST_NATIVE_PRECIPITATION as NATIVE_PRECIPITATION,
+    ATTR_FORECAST_NATIVE_PRESSURE as NATIVE_PRESSURE,
+    ATTR_FORECAST_NATIVE_TEMP as NATIVE_TEMP,
+    ATTR_FORECAST_NATIVE_TEMP_LOW as NATIVE_TEMP_LOW,
+    ATTR_FORECAST_NATIVE_WIND_GUST_SPEED as NATIVE_WIND_GUST_SPEED,
+    ATTR_FORECAST_NATIVE_WIND_SPEED as NATIVE_WIND_SPEED,
+    ATTR_FORECAST_PRECIPITATION_PROBABILITY as PRECIPITATION_PROBABILITY,
+    ATTR_FORECAST_UV_INDEX as UV_INDEX,
+    ATTR_FORECAST_WIND_BEARING as WIND_BEARING,
     Forecast,
-    OpenMeteo,
-    OpenMeteoError,
 )
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_LATITUDE, ATTR_LONGITUDE, CONF_ZONE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.util import dt as dt_util
 
-from .const import CONF_MODEL, DOMAIN, LOGGER, SCAN_INTERVAL
+from .const import (
+    CONF_MODEL,
+    CONF_UPDATE_INTERVAL,
+    CONF_USE_HA_TIMEZONE,
+    DOMAIN,
+    FLATBUFFERS_ERROR_MARKER,
+    FLATBUFFERS_PREFIX,
+    LOGGER,
+    OPEN_METEO_URL,
+    resolve_condition,
+)
 
 type OpenMeteoCustomConfigEntry = ConfigEntry[OpenMeteoCustomDataUpdateCoordinator]
 
+# (api_field_name, data_key, value_converter)
+# data_key=None: condition computation only (weather_code / is_day)
+_CURRENT_MAP: tuple[tuple[str, str | None, type], ...] = (
+    ("weather_code", None, int),
+    ("is_day", None, bool),
+    ("cloud_cover", "cloud_coverage", int),
+    ("relative_humidity_2m", "humidity", float),
+    ("apparent_temperature", "apparent_temperature", float),
+    ("dew_point_2m", "dew_point", float),
+    ("pressure_msl", "pressure", float),
+    ("temperature_2m", "temperature", float),
+    ("visibility", "visibility", float),
+    ("wind_gusts_10m", "wind_gust_speed", float),
+    ("wind_speed_10m", "wind_speed", float),
+    ("uv_index", "uv_index", float),
+    ("wind_direction_10m", "wind_bearing", float),
+)
 
-class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[Forecast]):
+# (api_field_name, forecast_ha_key, value_converter)
+# ha_key=None: condition computation only (weather_code / is_day)
+_DAILY_MAP: tuple[tuple[str, str | None, type], ...] = (
+    ("weather_code", None, int),
+    ("cloud_cover_mean", CLOUD_COVERAGE, int),
+    ("relative_humidity_2m_mean", HUMIDITY, float),
+    ("apparent_temperature_mean", NATIVE_APPARENT_TEMP, float),
+    ("dew_point_2m_mean", NATIVE_DEW_POINT, float),
+    ("precipitation_sum", NATIVE_PRECIPITATION, float),
+    ("pressure_msl_mean", NATIVE_PRESSURE, float),
+    ("temperature_2m_max", NATIVE_TEMP, float),
+    ("temperature_2m_min", NATIVE_TEMP_LOW, float),
+    ("wind_gusts_10m_max", NATIVE_WIND_GUST_SPEED, float),
+    ("wind_speed_10m_max", NATIVE_WIND_SPEED, float),
+    ("precipitation_probability_max", PRECIPITATION_PROBABILITY, int),
+    ("uv_index_max", UV_INDEX, float),
+    ("wind_direction_10m_dominant", WIND_BEARING, float),
+)
+
+_HOURLY_MAP: tuple[tuple[str, str | None, type], ...] = (
+    ("weather_code", None, int),
+    ("is_day", None, bool),
+    ("cloud_cover", CLOUD_COVERAGE, int),
+    ("relative_humidity_2m", HUMIDITY, float),
+    ("apparent_temperature", NATIVE_APPARENT_TEMP, float),
+    ("dew_point_2m", NATIVE_DEW_POINT, float),
+    ("precipitation", NATIVE_PRECIPITATION, float),
+    ("pressure_msl", NATIVE_PRESSURE, float),
+    ("temperature_2m", NATIVE_TEMP, float),
+    ("wind_gusts_10m", NATIVE_WIND_GUST_SPEED, float),
+    ("wind_speed_10m", NATIVE_WIND_SPEED, float),
+    ("precipitation_probability", PRECIPITATION_PROBABILITY, int),
+    ("uv_index", UV_INDEX, float),
+    ("wind_direction_10m", WIND_BEARING, float),
+)
+
+
+@dataclass
+class OpenMeteoData:
+    """Dataclass for Open-Meteo weather data."""
+
+    condition: str | None
+    temperature: float | None
+    humidity: float | None
+    dew_point: float | None
+    apparent_temperature: float | None
+    cloud_coverage: int | None
+    pressure: float | None
+    visibility: float | None
+    wind_speed: float | None
+    wind_bearing: float | None
+    wind_gust_speed: float | None
+    uv_index: float | None
+    daily_forecast: list[Forecast] = field(default_factory=list)
+    hourly_forecast: list[Forecast] = field(default_factory=list)
+
+
+class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[OpenMeteoData]):
     """A Open-Meteo Custom Data Update Coordinator."""
 
     config_entry: OpenMeteoCustomConfigEntry
 
     def __init__(self, hass: HomeAssistant, config_entry: OpenMeteoCustomConfigEntry) -> None:
         """Initialize the Open-Meteo Custom coordinator."""
+        update_interval_min = config_entry.data.get(CONF_UPDATE_INTERVAL, 30)
         super().__init__(
             hass,
             LOGGER,
             config_entry=config_entry,
             name=f"{DOMAIN}_{config_entry.data[CONF_ZONE]}_{config_entry.data.get(CONF_MODEL, 'best_match')}",
-            update_interval=SCAN_INTERVAL,
+            update_interval=timedelta(minutes=update_interval_min),
         )
-        session = async_get_clientsession(hass)
-        self.open_meteo = OpenMeteo(session=session)
-        self.is_day: int = 1
-        self.hourly_is_day: list[int] = []
 
     @override
-    async def _async_update_data(self) -> Forecast:
+    async def _async_update_data(self) -> OpenMeteoData:
         """Fetch data from Open-Meteo."""
         if (zone := self.hass.states.get(self.config_entry.data[CONF_ZONE])) is None:
             raise UpdateFailed(f"Zone '{self.config_entry.data[CONF_ZONE]}' not found")
 
-        latitude = zone.attributes[ATTR_LATITUDE]
-        longitude = zone.attributes[ATTR_LONGITUDE]
+        latitude = zone.attributes.get(ATTR_LATITUDE)
+        longitude = zone.attributes.get(ATTR_LONGITUDE)
+        if latitude is None or longitude is None:
+            raise UpdateFailed(f"Zone '{self.config_entry.data[CONF_ZONE]}' is missing latitude or longitude")
+
         model = self.config_entry.data.get(CONF_MODEL, "best_match")
 
-        query_params = {
+        use_ha_tz = self.config_entry.data.get(CONF_USE_HA_TIMEZONE, True)
+        timezone_param = self.hass.config.time_zone or "auto" if use_ha_tz else "auto"
+
+        params = {
             "latitude": str(latitude),
             "longitude": str(longitude),
-            "current_weather": "true",
-            "hourly": ",".join([
-                "relativehumidity_2m",
-                "apparent_temperature",
-                "pressure_msl",
-                "dewpoint_2m",
-                "windgusts_10m",
-                "cloudcover",
-                "temperature_2m",
-                "weathercode",
-                "precipitation",
-                "is_day",
-            ]),
-            "daily": ",".join([
-                "weathercode",
-                "temperature_2m_max",
-                "temperature_2m_min",
-                "precipitation_sum",
-                "winddirection_10m_dominant",
-                "windspeed_10m_max",
-            ]),
+            "current": ",".join(f for f, *_ in _CURRENT_MAP),
+            "daily": ",".join(f for f, *_ in _DAILY_MAP),
+            "hourly": ",".join(f for f, *_ in _HOURLY_MAP),
+            "forecast_hours": "168",
+            "format": "flatbuffers",
             "precipitation_unit": "mm",
             "temperature_unit": "celsius",
-            "timezone": "UTC",
-            "windspeed_unit": "kmh",
+            "timezone": timezone_param,
+            "wind_speed_unit": "kmh",
         }
 
         if model != "best_match":
-            query_params["models"] = model
-
-        url = URL("https://api.open-meteo.com/v1/forecast").with_query(query_params)
-        LOGGER.debug("Fetching Open-Meteo forecast URL: %s", url)
+            params["models"] = model
 
         try:
-            raw_data = await self.open_meteo._request(url=url)
-            data_dict = json.loads(raw_data)
-            
-            # Extract day/night information
-            self.is_day = data_dict.get("current_weather", {}).get("is_day", 1)
-            self.hourly_is_day = data_dict.get("hourly", {}).get("is_day", [])
-            
-            cleaned_dict = clean_forecast_data(data_dict)
-            return Forecast.from_dict(cleaned_dict)
-        except OpenMeteoError as err:
-            raise UpdateFailed(f"Open-Meteo API communication error: {err}") from err
+            session = async_get_clientsession(self.hass)
+            async with session.get(OPEN_METEO_URL, params=params) as http_response:
+                http_response.raise_for_status()
+                data = await http_response.read()
         except Exception as err:
-            raise UpdateFailed(f"Unexpected error updating Open-Meteo data: {err}") from err
+            raise UpdateFailed(f"Open-Meteo API communication error: {err}") from err
 
-    @property
-    def current_hourly_index(self) -> int | None:
-        """Find the index in the hourly data corresponding to the current time."""
-        if not self.data or not self.data.hourly or not self.data.hourly.time:
-            return None
+        # Check for JSON error response
+        if data.startswith(b"{"):
+            try:
+                import json
+                err_json = json.loads(data)
+                reason = err_json.get("reason", "Unknown API error")
+                raise UpdateFailed(f"Open-Meteo API error: {reason}")
+            except Exception as err:
+                if isinstance(err, UpdateFailed):
+                    raise
+                raise UpdateFailed(f"Open-Meteo API error (failed to parse JSON): {data.decode(errors='replace')}") from err
 
-        now = dt_util.utcnow()
-        closest_index = None
-        min_diff = None
+        # Parse the length-prefixed FlatBuffers frames.
+        total = len(data)
+        if total < FLATBUFFERS_PREFIX:
+            raise UpdateFailed("Malformed response frame header")
 
-        for index, timestamp in enumerate(self.data.hourly.time):
-            if timestamp.tzinfo is None:
-                timestamp = timestamp.replace(tzinfo=dt_util.UTC)
+        length = int.from_bytes(data[:FLATBUFFERS_PREFIX], byteorder="little")
+        if length == FLATBUFFERS_ERROR_MARKER:
+            raise UpdateFailed(data[FLATBUFFERS_PREFIX:].decode(errors="replace"))
+        if length <= 0:
+            raise UpdateFailed("Malformed response frame length")
 
-            diff = abs((timestamp - now).total_seconds())
-            if min_diff is None or diff < min_diff:
-                min_diff = diff
-                closest_index = index
+        frame_end = FLATBUFFERS_PREFIX + length
+        if frame_end > total:
+            raise UpdateFailed("Malformed response frame length")
 
-        return closest_index
+        response = WeatherApiResponse.GetRootAs(data, FLATBUFFERS_PREFIX)
 
+        if frame_end < total:
+            LOGGER.warning(
+                "Received %s extra bytes from Open-Meteo for %s; using first frame only",
+                total - frame_end,
+                self.config_entry.data[CONF_ZONE],
+            )
 
-def clean_forecast_data(data_dict: dict) -> dict:
-    """Clean the forecast data dictionary to prevent Mashumaro deserialization errors.
+        offset_sec = response.UtcOffsetSeconds()
+        tz = timezone(timedelta(seconds=offset_sec)) if offset_sec is not None else timezone.utc
 
-    Regional models return null (None) values at the end of their forecast lists
-    for days beyond their forecast horizon. This function truncates these lists
-    to the maximum length of continuous non-null data.
-    """
-    # Clean hourly data
-    if "hourly" in data_dict and isinstance(data_dict["hourly"], dict):
-        hourly = data_dict["hourly"]
-        if "time" in hourly and isinstance(hourly["time"], list):
-            original_len = len(hourly["time"])
-            max_len = original_len
-            check_keys = ["temperature_2m", "weathercode", "relativehumidity_2m"]
-            for key in check_keys:
-                if key in hourly and isinstance(hourly[key], list):
-                    for idx, val in enumerate(hourly[key]):
-                        if val is None:
-                            max_len = min(max_len, idx)
-                            break
-            if max_len < original_len:
-                LOGGER.debug("Hourly forecast truncated from %d to %d elements due to null values", original_len, max_len)
-            for key, val_list in hourly.items():
-                if isinstance(val_list, list):
-                    hourly[key] = val_list[:max_len]
+        # Current weather
+        condition: str | None = None
+        current_fields: dict[str, float | None] = {
+            data_key: None for _, data_key, _ in _CURRENT_MAP if data_key is not None
+        }
+        if (current := response.Current()) is not None:
+            wc_var = _find_variable(current, "weather_code")
+            id_var = _find_variable(current, "is_day")
+            wc_val = wc_var.Value() if wc_var is not None else 0
+            id_val = id_var.Value() if id_var is not None else True
+            condition = resolve_condition(int(wc_val), bool(id_val))
 
-    # Clean daily data
-    if "daily" in data_dict and isinstance(data_dict["daily"], dict):
-        daily = data_dict["daily"]
-        if "time" in daily and isinstance(daily["time"], list):
-            original_len = len(daily["time"])
-            max_len = original_len
-            check_keys = ["temperature_2m_max", "weathercode"]
-            for key in check_keys:
-                if key in daily and isinstance(daily[key], list):
-                    for idx, val in enumerate(daily[key]):
-                        if val is None:
-                            max_len = min(max_len, idx)
-                            break
-            if max_len < original_len:
-                LOGGER.debug("Daily forecast truncated from %d to %d elements due to null values", original_len, max_len)
-            for key, val_list in daily.items():
-                if isinstance(val_list, list):
-                    daily[key] = val_list[:max_len]
+            for api_name, data_key, conv in _CURRENT_MAP:
+                if data_key is not None:
+                    var = _find_variable(current, api_name)
+                    if var is not None:
+                        current_fields[data_key] = conv(var.Value())
 
-    return data_dict
+        # Daily forecast
+        daily_forecast: list[Forecast] = []
+        if (daily := response.Daily()) is not None:
+            interval = daily.Interval()
+            if interval > 0:
+                daily_forecast = [
+                    Forecast(datetime=datetime.fromtimestamp(ts, tz=tz).isoformat())
+                    for ts in range(daily.Time(), daily.TimeEnd(), interval)
+                ]
+            wc_var = _find_variable(daily, "weather_code")
+            if wc_var is not None:
+                for i, entry in enumerate(daily_forecast):
+                    if i < wc_var.ValuesLength():
+                        entry[CONDITION] = resolve_condition(int(wc_var.Values(i)))
+            for api_name, ha_key, conv in _DAILY_MAP:
+                if ha_key is not None:
+                    var = _find_variable(daily, api_name)
+                    if var is not None:
+                        for i, entry in enumerate(daily_forecast):
+                            if i < var.ValuesLength():
+                                entry[ha_key] = conv(var.Values(i))
+
+        # Hourly forecast
+        hourly_forecast: list[Forecast] = []
+        if (hourly := response.Hourly()) is not None:
+            interval = hourly.Interval()
+            if interval > 0:
+                hourly_forecast = [
+                    Forecast(datetime=datetime.fromtimestamp(ts, tz=tz).isoformat())
+                    for ts in range(hourly.Time(), hourly.TimeEnd(), interval)
+                ]
+            wc_var = _find_variable(hourly, "weather_code")
+            id_var = _find_variable(hourly, "is_day")
+            if wc_var is not None and id_var is not None:
+                for i, entry in enumerate(hourly_forecast):
+                    if i < wc_var.ValuesLength() and i < id_var.ValuesLength():
+                        entry[CONDITION] = resolve_condition(
+                            int(wc_var.Values(i)), bool(id_var.Values(i))
+                        )
+            elif wc_var is not None:
+                for i, entry in enumerate(hourly_forecast):
+                    if i < wc_var.ValuesLength():
+                        entry[CONDITION] = resolve_condition(int(wc_var.Values(i)))
+
+            for api_name, ha_key, conv in _HOURLY_MAP:
+                if ha_key is not None:
+                    var = _find_variable(hourly, api_name)
+                    if var is not None:
+                        for i, entry in enumerate(hourly_forecast):
+                            if i < var.ValuesLength():
+                                entry[ha_key] = conv(var.Values(i))
+
+        return OpenMeteoData(
+            condition=condition,
+            **current_fields,
+            daily_forecast=daily_forecast,
+            hourly_forecast=hourly_forecast,
+        )
+
 

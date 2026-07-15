@@ -1,8 +1,11 @@
 {
   "domain": "open_meteo_custom",
   "name": "Open-Meteo Custom",
-  "requirements": ["open-meteo==0.3.2"],
-  "version": "1.0.6",
+  "requirements": ["openmeteo-sdk==1.27.2"],
+  "version": "1.0.7",
   "codeowners": ["@iosmand"],
-  "config_flow": true
+  "config_flow": true,
+  "dependencies": ["zone"],
+  "integration_type": "service",
+  "iot_class": "cloud_polling"
 }

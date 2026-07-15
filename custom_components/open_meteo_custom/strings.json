@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Open-Meteo Custom Settings",
+        "description": "Please select the zone and forecast model you want to retrieve weather data for.",
+        "data": {
+          "zone": "Zone",
+          "model": "Forecast Model",
+          "update_interval": "Update Interval",
+          "use_ha_timezone": "Use Home Assistant Timezone"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This zone and forecast model combination is already configured."
+    }
+  }
+}

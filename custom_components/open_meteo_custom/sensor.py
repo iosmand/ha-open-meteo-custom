@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from collections.abc import Callable
 from typing import Final
 
-from open_meteo import Forecast
+from .coordinator import OpenMeteoCustomConfigEntry, OpenMeteoCustomDataUpdateCoordinator, OpenMeteoData
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -31,7 +31,7 @@ from .coordinator import OpenMeteoCustomConfigEntry, OpenMeteoCustomDataUpdateCo
 class OpenMeteoCustomSensorEntityDescription(SensorEntityDescription):
     """Describes Open-Meteo Custom sensor entity."""
 
-    value_fn: Callable[[Forecast, int], float | int | None]
+    value_fn: Callable[[OpenMeteoData], float | int | None]
 
 
 SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] = (
@@ -42,9 +42,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.HUMIDITY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data, idx: data.hourly.relative_humidity_2m[idx]
-        if data.hourly and data.hourly.relative_humidity_2m and idx < len(data.hourly.relative_humidity_2m)
-        else None,
+        value_fn=lambda data: data.humidity,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="pressure",
@@ -53,9 +51,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.PRESSURE,
         native_unit_of_measurement=UnitOfPressure.HPA,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data, idx: data.hourly.pressure_msl[idx]
-        if data.hourly and data.hourly.pressure_msl and idx < len(data.hourly.pressure_msl)
-        else None,
+        value_fn=lambda data: data.pressure,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="apparent_temperature",
@@ -64,9 +60,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data, idx: data.hourly.apparent_temperature[idx]
-        if data.hourly and data.hourly.apparent_temperature and idx < len(data.hourly.apparent_temperature)
-        else None,
+        value_fn=lambda data: data.apparent_temperature,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="dew_point",
@@ -75,9 +69,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data, idx: data.hourly.dew_point_2m[idx]
-        if data.hourly and data.hourly.dew_point_2m and idx < len(data.hourly.dew_point_2m)
-        else None,
+        value_fn=lambda data: data.dew_point,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="cloud_cover",
@@ -85,9 +77,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         translation_key="cloud_cover",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data, idx: data.hourly.cloud_cover[idx]
-        if data.hourly and data.hourly.cloud_cover and idx < len(data.hourly.cloud_cover)
-        else None,
+        value_fn=lambda data: data.cloud_coverage,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="wind_gust",
@@ -96,9 +86,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.WIND_SPEED,
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data, idx: data.hourly.wind_gusts_10m[idx]
-        if data.hourly and data.hourly.wind_gusts_10m and idx < len(data.hourly.wind_gusts_10m)
-        else None,
+        value_fn=lambda data: data.wind_gust_speed,
     ),
 )
 
@@ -149,7 +137,6 @@ class OpenMeteoCustomSensorEntity(
     @property
     def native_value(self) -> float | int | None:
         """Return the state of the sensor."""
-        idx = self.coordinator.current_hourly_index
-        if idx is None or not self.coordinator.data:
+        if not self.coordinator.data:
             return None
-        return self.entity_description.value_fn(self.coordinator.data, idx)
+        return self.entity_description.value_fn(self.coordinator.data)
