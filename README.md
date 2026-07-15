@@ -24,6 +24,8 @@ This custom integration removes the data limits of the default Home Assistant Op
    * `sensor.[zone]_dew_point` (Dew Point - °C)
    * `sensor.[zone]_cloud_cover` (Cloud Cover - %)
    * `sensor.[zone]_wind_gust` (Wind Gust - km/h)
+   * `sensor.[zone]_wind_speed` (Wind Speed - km/h)
+   * `sensor.[zone]_visibility` (Visibility - km)
 
 3. **Advanced Forecast Model Selection:** During configuration, you can choose from the following forecast models instead of relying on the default blended `best_match` logic:
    * **DWD ICON Europe** (7 km resolution - Highly recommended for Europe/Turkey)
