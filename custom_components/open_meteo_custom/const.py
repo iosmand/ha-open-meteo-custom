@@ -30,7 +30,7 @@ MODELS: Final[dict[str, str]] = {
     "gfs_global": "GFS Global (28/13 km)",
     "meteofrance_seamless": "Météo-France Seamless (2 km)",
     "gem_seamless": "GEM Seamless (Canada 25/10/2.5 km)",
-    "ukmo_global": "UKMO Global (10 km)",
+    "ukmo_seamless": "UKMO Seamless (10/2 km)",
 }
 
 # World Meteorological Organization Weather Code
