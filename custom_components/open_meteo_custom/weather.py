@@ -117,7 +117,7 @@ class OpenMeteoCustomWeatherEntity(
             integrations={DOMAIN}
         )
         
-        prefix = f"component.{DOMAIN}.entity.weather.open_meteo_custom.state_attributes.attribution."
+        prefix = f"component.{DOMAIN}.entity.weather.open_meteo_custom.state_attributes.attribution.state."
         for key, val in translations.items():
             if key.startswith(prefix):
                 model_key = key[len(prefix):]

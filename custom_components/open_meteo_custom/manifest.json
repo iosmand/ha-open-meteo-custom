@@ -1,13 +1,13 @@
 {
   "domain": "open_meteo_custom",
   "name": "Open-Meteo Custom",
-  "requirements": ["openmeteo-sdk==1.27.2"],
-  "version": "1.0.10",
   "codeowners": ["@iosmand"],
   "config_flow": true,
   "dependencies": ["zone"],
   "documentation": "https://github.com/iosmand/ha-open-meteo-custom",
-  "issue_tracker": "https://github.com/iosmand/ha-open-meteo-custom/issues",
   "integration_type": "service",
-  "iot_class": "cloud_polling"
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/iosmand/ha-open-meteo-custom/issues",
+  "requirements": ["openmeteo-sdk==1.27.2"],
+  "version": "1.0.10"
 }

@@ -50,15 +50,17 @@
       "open_meteo_custom": {
         "state_attributes": {
           "attribution": {
-            "best_match": "Weather forecast from Open-Meteo (Best Match Auto-Selection)",
-            "dwd_icon_eu": "Weather forecast from Deutscher Wetterdienst, delivered by Open-Meteo (ICON Europe)",
-            "dwd_icon": "Weather forecast from Deutscher Wetterdienst, delivered by Open-Meteo (ICON Global)",
-            "ecmwf_ifs": "Weather forecast from European Centre for Medium-Range Weather Forecasts, delivered by Open-Meteo (ECMWF)",
-            "gfs_global": "Weather forecast from National Oceanic and Atmospheric Administration, delivered by Open-Meteo (GFS)",
-            "meteofrance_seamless": "Weather forecast from Météo-France, delivered by Open-Meteo (Seamless)",
-            "gem_seamless": "Weather forecast from Environment and Climate Change Canada, delivered by Open-Meteo (GEM)",
-            "ukmo_seamless": "Weather forecast from UK Met Office, delivered by Open-Meteo (Seamless)",
-            "fallback": "Weather forecast from {model}, delivered by Open-Meteo"
+            "state": {
+              "best_match": "Weather forecast from Open-Meteo (Best Match Auto-Selection)",
+              "dwd_icon_eu": "Weather forecast from Deutscher Wetterdienst, delivered by Open-Meteo (ICON Europe)",
+              "dwd_icon": "Weather forecast from Deutscher Wetterdienst, delivered by Open-Meteo (ICON Global)",
+              "ecmwf_ifs": "Weather forecast from European Centre for Medium-Range Weather Forecasts, delivered by Open-Meteo (ECMWF)",
+              "gfs_global": "Weather forecast from National Oceanic and Atmospheric Administration, delivered by Open-Meteo (GFS)",
+              "meteofrance_seamless": "Weather forecast from Météo-France, delivered by Open-Meteo (Seamless)",
+              "gem_seamless": "Weather forecast from Environment and Climate Change Canada, delivered by Open-Meteo (GEM)",
+              "ukmo_seamless": "Weather forecast from UK Met Office, delivered by Open-Meteo (Seamless)",
+              "fallback": "Weather forecast from {model}, delivered by Open-Meteo"
+            }
           }
         }
       }

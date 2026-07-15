@@ -50,15 +50,17 @@
       "open_meteo_custom": {
         "state_attributes": {
           "attribution": {
-            "best_match": "Open-Meteo'dan hava durumu tahmini (Otomatik En İyi Tahmin Seçimi)",
-            "dwd_icon_eu": "Deutscher Wetterdienst'ten hava durumu tahmini, Open-Meteo tarafından sunulmuştur (ICON Avrupa)",
-            "dwd_icon": "Deutscher Wetterdienst'ten hava durumu tahmini, Open-Meteo tarafından sunulmuştur (ICON Küresel)",
-            "ecmwf_ifs": "Avrupa Orta Vadeli Hava Tahminleri Merkezi'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (ECMWF)",
-            "gfs_global": "Ulusal Okyanus ve Atmosfer İdaresi'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (GFS)",
-            "meteofrance_seamless": "Météo-France'tan hava durumu tahmini, Open-Meteo tarafından sunulmuştur (Seamless)",
-            "gem_seamless": "Kanada Çevre ve İklim Değişikliği'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (GEM)",
-            "ukmo_seamless": "Birleşik Krallık Meteoroloji Ofisi'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (Seamless)",
-            "fallback": "{model} modelinden hava durumu tahmini, Open-Meteo tarafından sunulmuştur"
+            "state": {
+              "best_match": "Open-Meteo'dan hava durumu tahmini (Otomatik En İyi Tahmin Seçimi)",
+              "dwd_icon_eu": "Deutscher Wetterdienst'ten hava durumu tahmini, Open-Meteo tarafından sunulmuştur (ICON Avrupa)",
+              "dwd_icon": "Deutscher Wetterdienst'ten hava durumu tahmini, Open-Meteo tarafından sunulmuştur (ICON Küresel)",
+              "ecmwf_ifs": "Avrupa Orta Vadeli Hava Tahminleri Merkezi'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (ECMWF)",
+              "gfs_global": "Ulusal Okyanus ve Atmosfer İdaresi'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (GFS)",
+              "meteofrance_seamless": "Météo-France'tan hava durumu tahmini, Open-Meteo tarafından sunulmuştur (Seamless)",
+              "gem_seamless": "Kanada Çevre ve İklim Değişikliği'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (GEM)",
+              "ukmo_seamless": "Birleşik Krallık Meteoroloji Ofisi'nden hava durumu tahmini, Open-Meteo tarafından sunulmuştur (Seamless)",
+              "fallback": "{model} modelinden hava durumu tahmini, Open-Meteo tarafından sunulmuştur"
+            }
           }
         }
       }
