@@ -27,21 +27,41 @@ Bu özel entegrasyon (custom integration), Home Assistant'ın varsayılan Open-M
    * **DWD ICON Europe** (7 km çözünürlük - Türkiye için en isabetlisi)
    * **DWD ICON Global** (13 km çözünürlük)
    * **ECMWF IFS** (Dünya geneli 25/9 km çözünürlük)
-   * **GFS Global**
-   * **Météo-France Seamless**
-   * **GEM Seamless**
-   * **UKMO Global**
+   * **GFS Global** (28/13 km çözünürlük)
+   * **Météo-France Seamless** (2 km çözünürlük)
+   * **GEM Seamless** (Kanada 25/10/2.5 km çözünürlük)
+   * **UKMO Seamless** (Birleşik Krallık / Küresel 10/2 km çözünürlük)
 
 4. **Multi-Model Kurulum Desteği:** Aynı bölge (Zone) için farklı tahmin modellerine ait birden fazla entegrasyon kurabilir, böylece arayüzde modelleri yan yana kıyaslayabilirsiniz.
 
 ---
 
-## 🛠️ Kurulum Adımları
+## 🛠️ Kurulum Kılavuzu
 
-Entegrasyonu Home Assistant sisteminize yüklemek için şu adımları takip edin:
+Entegrasyonu Home Assistant sisteminize yüklemek için aşağıdaki yöntemlerden birini seçebilirsiniz.
 
-1. **Dosyaları Kopyalayın:**
-   `/home/i0s/Documents/ha-open-meteo-custom/custom_components/open_meteo_custom/` klasörünü Home Assistant kurulumunuzun `/config/custom_components/` dizini altına kopyalayın. Klasör yapısı şu şekilde olmalıdır:
+### Yöntem A: HACS ile Kurulum (En Kolay & Önerilen)
+
+Eğer sisteminizde HACS (Home Assistant Community Store) kuruluysa, güncellemeleri kolayca takip edebilmek için bu yöntemi tercih edin:
+
+1. Home Assistant sol menüsünden **HACS** arayüzünü açın.
+2. Sağ üst köşedeki **üç noktaya** tıklayın ve **Custom repositories (Özel depolar)** seçeneğini seçin.
+3. Açılan pencerede:
+   * **Repository (Depo):** `https://github.com/iosmand/ha-open-meteo-custom`
+   * **Category (Kategori):** `Integration` (Entegrasyon) seçin.
+   * **Add (Ekle)** butonuna tıklayın.
+4. Listeye eklenen **Open-Meteo Custom** entegrasyonuna tıklayın ve sağ alttaki **Download (İndir)** butonuna basarak indirin.
+5. Home Assistant'ı yeniden başlatın (**Geliştirici Araçları > YAML > Yeniden Başlat**).
+
+---
+
+### Yöntem B: Manuel Kurulum (Standart HA İşletim Sistemleri)
+
+Sisteminizde terminal/SSH erişimi veya dosya yöneticisi (File Editor/Samba) varsa:
+
+1. Bu depodaki `custom_components/open_meteo_custom` klasörünü bilgisayarınıza indirin.
+2. Home Assistant `/config/` dizininin altında `custom_components` adında bir klasör yoksa oluşturun.
+3. İndirdiğiniz `open_meteo_custom` klasörünü bu `custom_components` klasörünün içine kopyalayın. Klasör yapınız aşağıdaki gibi olmalıdır:
    ```text
    config/
    └── custom_components/
@@ -57,11 +77,44 @@ Entegrasyonu Home Assistant sisteminize yüklemek için şu adımları takip edi
                ├── en.json
                └── tr.json
    ```
+4. Home Assistant'ı yeniden başlatın.
 
-2. **Home Assistant'ı Yeniden Başlatın:**
-   Dosyaları kopyaladıktan sonra Home Assistant arayüzünden **Geliştirici Araçları > YAML > Yeniden Başlat** altından sistemi yeniden başlatın.
+---
 
-3. **Cihaz Ekleme:**
-   * **Ayarlar > Cihazlar ve Hizmetler > Entegrasyon Ekle** adımlarını izleyin.
-   * Arama kutusuna **"Open-Meteo Custom"** yazın.
-   * Karşınıza gelen pencerede hava verilerini çekmek istediğiniz **Bölgeyi (Zone)** ve kullanmak istediğiniz **Tahmin Modelini** seçip kurulumu tamamlayın.
+### Yöntem C: Docker Container Üzerinde Kurulum
+
+Eğer Home Assistant'ı bir Docker konteyneri olarak (örn. Synology NAS, Unraid veya bağımsız Linux docker) çalıştırıyorsanız:
+
+#### Seçenek 1: Volume Map (Bağlama) Üzerinden Kopyalama (Önerilen)
+Home Assistant konteynerini kurarken muhtemelen host makinenizde bir klasörü `/config` dizinine bağladınız (Örn: `-v /home/user/homeassistant:/config`).
+1. Host makinenizdeki bu konuma gidin: `/home/user/homeassistant/` (kendi yolunuza göre güncelleyin).
+2. Burada `custom_components` klasörünü bulun (yoksa oluşturun) ve içine `open_meteo_custom` klasörünü yerleştirin.
+3. Konteyneri yeniden başlatın:
+   ```bash
+   docker restart <container_name_or_id>
+   ```
+
+#### Seçenek 2: `docker cp` Komutu ile Kopyalama
+Eğer host makinede dosyayı bağladığınız klasörü bulamıyorsanız, dosyaları doğrudan konteynerin içine kopyalayabilirsiniz:
+1. Depoyu host makinenize indirin ve terminalde o klasöre gidin.
+2. Klasörü doğrudan çalışan konteynerin içine kopyalamak için şu komutu çalıştırın (kendi konteyner adınızı yazın):
+   ```bash
+   docker cp custom_components/open_meteo_custom <homeassistant_container_name>:/config/custom_components/
+   ```
+3. Konteyner içindeki izinleri kontrol etmek ve temizlemek için konteyneri yeniden başlatın:
+   ```bash
+   docker restart <homeassistant_container_name>
+   ```
+
+---
+
+## ⚙️ Entegrasyonun Etkinleştirilmesi
+
+Kurulum yöntemlerinden biriyle dosyaları yükleyip sistemi yeniden başlattıktan sonra:
+
+1. **Ayarlar > Cihazlar ve Hizmetler > Entegrasyon Ekle** adımlarını izleyin.
+2. Arama kutusuna **"Open-Meteo Custom"** yazın ve seçin.
+3. Karşınıza gelen kurulum penceresinde:
+   * **Bölge (Zone):** Hava verilerini çekmek istediğiniz konumu (örneğin eviniz/Home zone) seçin.
+   * **Tahmin Modeli:** Kullanmak istediğiniz tahmin modelini seçin (Türkiye için **DWD ICON Europe (7 km)** en isabetli sonuçları verir).
+4. **Gönder** butonuna tıklayarak kurulumu tamamlayın. Varlıklar ve sensörler saniyeler içinde Home Assistant sisteminizde görünecektir.
