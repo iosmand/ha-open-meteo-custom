@@ -234,9 +234,10 @@ class OpenMeteoCustomWeatherEntity(
             )
 
             if daily.weathercode is not None:
-                forecast["condition"] = WMO_TO_HA_CONDITION_MAP.get(
-                    daily.weathercode[index]
-                )
+                cond = WMO_TO_HA_CONDITION_MAP.get(daily.weathercode[index])
+                if index == 0 and cond == ATTR_CONDITION_SUNNY and not self.coordinator.is_day:
+                    cond = ATTR_CONDITION_CLEAR_NIGHT
+                forecast["condition"] = cond
 
             if daily.precipitation_sum is not None:
                 forecast["native_precipitation"] = daily.precipitation_sum[index]
