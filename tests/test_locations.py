@@ -112,6 +112,7 @@ async def run_test_for_location(session, client, loc):
             "temperature_2m",
             "weathercode",
             "precipitation",
+            "is_day",
         ]),
         "daily": ",".join([
             "weathercode",

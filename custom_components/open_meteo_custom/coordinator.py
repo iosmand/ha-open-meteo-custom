@@ -38,6 +38,8 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[Forecast]):
         )
         session = async_get_clientsession(hass)
         self.open_meteo = OpenMeteo(session=session)
+        self.is_day: int = 1
+        self.hourly_is_day: list[int] = []
 
     @override
     async def _async_update_data(self) -> Forecast:
@@ -63,6 +65,7 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[Forecast]):
                 "temperature_2m",
                 "weathercode",
                 "precipitation",
+                "is_day",
             ]),
             "daily": ",".join([
                 "weathercode",
@@ -87,6 +90,11 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[Forecast]):
         try:
             raw_data = await self.open_meteo._request(url=url)
             data_dict = json.loads(raw_data)
+            
+            # Extract day/night information
+            self.is_day = data_dict.get("current_weather", {}).get("is_day", 1)
+            self.hourly_is_day = data_dict.get("hourly", {}).get("is_day", [])
+            
             cleaned_dict = clean_forecast_data(data_dict)
             return Forecast.from_dict(cleaned_dict)
         except OpenMeteoError as err:

@@ -20,7 +20,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_MODEL, DOMAIN, MODELS, WMO_TO_HA_CONDITION_MAP
+from .const import ATTR_CONDITION_CLEAR_NIGHT, ATTR_CONDITION_SUNNY, CONF_MODEL, DOMAIN, MODELS, WMO_TO_HA_CONDITION_MAP
 from .coordinator import OpenMeteoCustomConfigEntry, OpenMeteoCustomDataUpdateCoordinator
 
 
@@ -95,9 +95,12 @@ class OpenMeteoCustomWeatherEntity(
         """Return the current condition."""
         if not self.coordinator.data.current_weather:
             return None
-        return WMO_TO_HA_CONDITION_MAP.get(
-            self.coordinator.data.current_weather.weather_code
-        )
+        weather_code = self.coordinator.data.current_weather.weather_code
+        is_day = self.coordinator.is_day
+        cond = WMO_TO_HA_CONDITION_MAP.get(weather_code)
+        if cond == ATTR_CONDITION_SUNNY and not is_day:
+            return ATTR_CONDITION_CLEAR_NIGHT
+        return cond
 
     @property
     @override
@@ -251,9 +254,11 @@ class OpenMeteoCustomWeatherEntity(
             )
 
             if hourly.weather_code is not None:
-                forecast["condition"] = WMO_TO_HA_CONDITION_MAP.get(
-                    hourly.weather_code[index]
-                )
+                cond = WMO_TO_HA_CONDITION_MAP.get(hourly.weather_code[index])
+                is_day = self.coordinator.hourly_is_day[index] if (self.coordinator.hourly_is_day and index < len(self.coordinator.hourly_is_day)) else 1
+                if cond == ATTR_CONDITION_SUNNY and not is_day:
+                    cond = ATTR_CONDITION_CLEAR_NIGHT
+                forecast["condition"] = cond
 
             if hourly.precipitation is not None:
                 forecast["native_precipitation"] = hourly.precipitation[index]
