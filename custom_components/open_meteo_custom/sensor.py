@@ -43,7 +43,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.temperature,
+        value_fn=lambda data: round(data.temperature, 1) if data.temperature is not None else None,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="humidity",
@@ -52,7 +52,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.HUMIDITY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.humidity,
+        value_fn=lambda data: round(data.humidity, 1) if data.humidity is not None else None,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="pressure",
@@ -61,7 +61,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.PRESSURE,
         native_unit_of_measurement=UnitOfPressure.HPA,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.pressure,
+        value_fn=lambda data: round(data.pressure, 1) if data.pressure is not None else None,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="apparent_temperature",
@@ -70,7 +70,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.apparent_temperature,
+        value_fn=lambda data: round(data.apparent_temperature, 1) if data.apparent_temperature is not None else None,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="dew_point",
@@ -79,7 +79,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.dew_point,
+        value_fn=lambda data: round(data.dew_point, 1) if data.dew_point is not None else None,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="cloud_cover",
@@ -87,7 +87,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         translation_key="cloud_cover",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.cloud_coverage,
+        value_fn=lambda data: round(data.cloud_coverage) if data.cloud_coverage is not None else None,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="wind_gust",
@@ -96,7 +96,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.WIND_SPEED,
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.wind_gust_speed,
+        value_fn=lambda data: round(data.wind_gust_speed, 1) if data.wind_gust_speed is not None else None,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="wind_speed",
@@ -105,7 +105,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.WIND_SPEED,
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.wind_speed,
+        value_fn=lambda data: round(data.wind_speed, 1) if data.wind_speed is not None else None,
     ),
     OpenMeteoCustomSensorEntityDescription(
         key="visibility",
@@ -114,7 +114,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[OpenMeteoCustomSensorEntityDescription, ...]] =
         device_class=SensorDeviceClass.DISTANCE,
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.visibility / 1000 if data.visibility is not None else None,
+        value_fn=lambda data: round(data.visibility / 1000, 1) if data.visibility is not None else None,
     ),
 )
 
