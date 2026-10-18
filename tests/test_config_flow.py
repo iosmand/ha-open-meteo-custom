@@ -1,10 +1,18 @@
-import pytest
 from unittest.mock import patch
-from homeassistant.core import HomeAssistant
+
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.open_meteo_custom.const import (
+    CONF_MODEL,
+    CONF_UPDATE_INTERVAL,
+    CONF_USE_HA_TIMEZONE,
+    DOMAIN,
+)
 from homeassistant.config_entries import SOURCE_USER
-from homeassistant.data_entry_flow import FlowResultType
-from custom_components.open_meteo_custom.const import DOMAIN, CONF_MODEL, CONF_UPDATE_INTERVAL, CONF_USE_HA_TIMEZONE
 from homeassistant.const import CONF_ZONE
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
+
 
 async def test_flow_user_init(hass: HomeAssistant) -> None:
     """Test user step shows schema and correct options."""
@@ -55,7 +63,6 @@ async def test_flow_user_duplicate_aborts(hass: HomeAssistant) -> None:
     hass.states.async_set("zone.home", "zoning", {"friendly_name": "Home"})
 
     # Setup an existing config entry
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
     MockConfigEntry(
         domain=DOMAIN,
         unique_id="zone.home_best_match",

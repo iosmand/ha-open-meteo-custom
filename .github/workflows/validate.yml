@@ -27,3 +27,13 @@ jobs:
           persist-credentials: false
       - name: Hassfest validation
         uses: home-assistant/actions/hassfest@master
+
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Ruff lint
+        uses: astral-sh/ruff-action@v3

@@ -1,10 +1,15 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.open_meteo_custom.const import FLATBUFFERS_ERROR_MARKER
+from custom_components.open_meteo_custom.coordinator import (
+    OpenMeteoCustomDataUpdateCoordinator,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
-from custom_components.open_meteo_custom.coordinator import OpenMeteoCustomDataUpdateCoordinator
-from custom_components.open_meteo_custom.const import FLATBUFFERS_ERROR_MARKER
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 
 async def test_coordinator_missing_zone(hass: HomeAssistant, mock_config_entry: MockConfigEntry) -> None:
     """Test coordinator update fails if the zone is not found in Home Assistant."""
@@ -16,7 +21,7 @@ async def test_coordinator_missing_coordinates(hass: HomeAssistant, mock_config_
     """Test coordinator update fails if the zone lacks coordinates."""
     # Set zone without latitude and longitude
     hass.states.async_set("zone.home", "zoning", {"friendly_name": "Home"})
-    
+
     coordinator = OpenMeteoCustomDataUpdateCoordinator(hass, mock_config_entry)
     with pytest.raises(UpdateFailed, match="Zone 'zone.home' is missing latitude or longitude"):
         await coordinator._async_update_data()

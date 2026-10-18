@@ -1,10 +1,8 @@
 """Support for Open-Meteo Custom sensors."""
 
-from dataclasses import dataclass
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Final
-
-from .coordinator import OpenMeteoCustomConfigEntry, OpenMeteoCustomDataUpdateCoordinator, OpenMeteoData
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -25,7 +23,11 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_MODEL, DOMAIN, MODELS
-from .coordinator import OpenMeteoCustomConfigEntry, OpenMeteoCustomDataUpdateCoordinator
+from .coordinator import (
+    OpenMeteoCustomConfigEntry,
+    OpenMeteoCustomDataUpdateCoordinator,
+    OpenMeteoData,
+)
 
 
 @dataclass(frozen=True, kw_only=True)
