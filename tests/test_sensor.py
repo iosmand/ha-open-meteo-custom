@@ -1,9 +1,8 @@
 import pytest
-from homeassistant.core import HomeAssistant
-from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
-from homeassistant.const import STATE_UNAVAILABLE
-from custom_components.open_meteo_custom.const import DOMAIN
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from homeassistant.core import HomeAssistant
+
 
 async def test_sensor_entities(
     hass: HomeAssistant,

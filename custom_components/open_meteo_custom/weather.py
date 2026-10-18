@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import override
+from typing import Any, override
 
 from homeassistant.components.weather import (
     Forecast,
@@ -18,11 +18,15 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import translation
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import CONF_MODEL, DOMAIN, MODELS
-from .coordinator import OpenMeteoCustomConfigEntry, OpenMeteoCustomDataUpdateCoordinator
+from .coordinator import (
+    OpenMeteoCustomConfigEntry,
+    OpenMeteoCustomDataUpdateCoordinator,
+)
 
 
 async def async_setup_entry(
@@ -105,8 +109,7 @@ class OpenMeteoCustomWeatherEntity(
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""
         await super().async_added_to_hass()
-        from homeassistant.helpers import translation
-        
+
         lang = self.hass.config.language
         translations = await translation.async_get_translations(
             self.hass,
@@ -114,13 +117,13 @@ class OpenMeteoCustomWeatherEntity(
             "entity",
             integrations={DOMAIN}
         )
-        
+
         prefix = f"component.{DOMAIN}.entity.weather.open_meteo_custom.state_attributes.attribution.state."
         for key, val in translations.items():
             if key.startswith(prefix):
                 model_key = key[len(prefix):]
                 self._attribution_translations[model_key] = val
-        
+
         self._update_attribution()
         self.async_write_ha_state()
 

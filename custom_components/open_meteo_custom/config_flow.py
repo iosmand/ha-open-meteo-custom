@@ -15,7 +15,13 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
 )
 
-from .const import CONF_MODEL, CONF_UPDATE_INTERVAL, CONF_USE_HA_TIMEZONE, DOMAIN, MODELS
+from .const import (
+    CONF_MODEL,
+    CONF_UPDATE_INTERVAL,
+    CONF_USE_HA_TIMEZONE,
+    DOMAIN,
+    MODELS,
+)
 
 
 class OpenMeteoCustomFlowHandler(ConfigFlow, domain=DOMAIN):
@@ -32,14 +38,14 @@ class OpenMeteoCustomFlowHandler(ConfigFlow, domain=DOMAIN):
             zone_id = user_input[CONF_ZONE]
             model = user_input[CONF_MODEL]
             unique_id = f"{zone_id}_{model}"
-            
+
             await self.async_set_unique_id(unique_id)
             self._abort_if_unique_id_configured()
 
             state = self.hass.states.get(zone_id)
             zone_name = state.name if state else "Unknown Zone"
             model_label = MODELS.get(model, model)
-            
+
             return self.async_create_entry(
                 title=f"{zone_name} ({model_label})",
                 data={

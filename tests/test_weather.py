@@ -1,6 +1,10 @@
 import pytest
-from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.open_meteo_custom.weather import OpenMeteoCustomWeatherEntity
 from homeassistant.components.weather import (
+    ATTR_FORECAST_CONDITION,
+    ATTR_FORECAST_NATIVE_TEMP,
     ATTR_WEATHER_APPARENT_TEMPERATURE,
     ATTR_WEATHER_CLOUD_COVERAGE,
     ATTR_WEATHER_DEW_POINT,
@@ -12,13 +16,11 @@ from homeassistant.components.weather import (
     ATTR_WEATHER_WIND_BEARING,
     ATTR_WEATHER_WIND_GUST_SPEED,
     ATTR_WEATHER_WIND_SPEED,
-    ATTR_FORECAST_CONDITION,
-    ATTR_FORECAST_NATIVE_TEMP,
     DOMAIN as WEATHER_DOMAIN,
 )
 from homeassistant.const import STATE_UNAVAILABLE
-from custom_components.open_meteo_custom.const import DOMAIN
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.core import HomeAssistant
+
 
 async def test_weather_entity_properties(
     hass: HomeAssistant,
@@ -28,7 +30,7 @@ async def test_weather_entity_properties(
 ) -> None:
     """Test weather entity state and attributes are populated from FlatBuffers."""
     mock_config_entry.add_to_hass(hass)
-    
+
     # Set up the integration entry
     assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
@@ -69,12 +71,11 @@ async def test_weather_forecast(
 ) -> None:
     """Test weather forecast methods return daily and hourly forecasts."""
     mock_config_entry.add_to_hass(hass)
-    
+
     assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
     # Get the entity from registry or instantiate it
-    from custom_components.open_meteo_custom.weather import OpenMeteoCustomWeatherEntity
     coordinator = mock_config_entry.runtime_data
     weather_entity = OpenMeteoCustomWeatherEntity(entry=mock_config_entry, coordinator=coordinator)
     weather_entity.hass = hass

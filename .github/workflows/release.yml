@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - custom_components/open_meteo_custom/manifest.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish release for manifest version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(jq -r .version custom_components/open_meteo_custom/manifest.json)
+          tag="v${version}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists, nothing to do"
+            exit 0
+          fi
+          # Use the matching CHANGELOG.md section as release notes when present
+          awk -v heading="## ${tag}" '$0 == heading {found=1; next} /^## / {found=0} found' CHANGELOG.md > notes.md || true
+          if [ -s notes.md ]; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md
+          else
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$tag" --generate-notes
+          fi

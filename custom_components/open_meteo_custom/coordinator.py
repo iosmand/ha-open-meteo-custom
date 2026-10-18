@@ -4,77 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+import json
 from typing import override
 
-from openmeteo_sdk.WeatherApiResponse import WeatherApiResponse
-from openmeteo_sdk.Variable import Variable as OMVariable
 from openmeteo_sdk.Aggregation import Aggregation as OMAggregation
-
-# Map API string parameter to FlatBuffers Variable identifiers: (variable_id, altitude, aggregation_id)
-_API_TO_FB_METADATA = {
-    # Current/Hourly
-    "weather_code": (OMVariable.weather_code, 0, OMAggregation.none),
-    "is_day": (OMVariable.is_day, 0, OMAggregation.none),
-    "cloud_cover": (OMVariable.cloud_cover, 0, OMAggregation.none),
-    "relative_humidity_2m": (OMVariable.relative_humidity, 2, OMAggregation.none),
-    "apparent_temperature": (OMVariable.apparent_temperature, 2, OMAggregation.none),
-    "dew_point_2m": (OMVariable.dew_point, 2, OMAggregation.none),
-    "precipitation": (OMVariable.precipitation, 0, OMAggregation.none),
-    "pressure_msl": (OMVariable.pressure_msl, 0, OMAggregation.none),
-    "temperature_2m": (OMVariable.temperature, 2, OMAggregation.none),
-    "visibility": (OMVariable.visibility, 0, OMAggregation.none),
-    "wind_gusts_10m": (OMVariable.wind_gusts, 10, OMAggregation.none),
-    "wind_speed_10m": (OMVariable.wind_speed, 10, OMAggregation.none),
-    "precipitation_probability": (OMVariable.precipitation_probability, 0, OMAggregation.none),
-    "uv_index": (OMVariable.uv_index, 0, OMAggregation.none),
-    "wind_direction_10m": (OMVariable.wind_direction, 10, OMAggregation.none),
-    
-    # Daily
-    "cloud_cover_mean": (OMVariable.cloud_cover, 0, OMAggregation.mean),
-    "relative_humidity_2m_mean": (OMVariable.relative_humidity, 2, OMAggregation.mean),
-    "apparent_temperature_mean": (OMVariable.apparent_temperature, 2, OMAggregation.mean),
-    "dew_point_2m_mean": (OMVariable.dew_point, 2, OMAggregation.mean),
-    "precipitation_sum": (OMVariable.precipitation, 0, OMAggregation.sum),
-    "pressure_msl_mean": (OMVariable.pressure_msl, 0, OMAggregation.mean),
-    "temperature_2m_max": (OMVariable.temperature, 2, OMAggregation.maximum),
-    "temperature_2m_min": (OMVariable.temperature, 2, OMAggregation.minimum),
-    "wind_gusts_10m_max": (OMVariable.wind_gusts, 10, OMAggregation.maximum),
-    "wind_speed_10m_max": (OMVariable.wind_speed, 10, OMAggregation.maximum),
-    "precipitation_probability_max": (OMVariable.precipitation_probability, 0, OMAggregation.maximum),
-    "uv_index_max": (OMVariable.uv_index, 0, OMAggregation.maximum),
-    "wind_direction_10m_dominant": (OMVariable.wind_direction, 10, OMAggregation.dominant),
-}
-
-
-def _find_variable(variables_container, name: str):
-    """Find a variable by name in the FlatBuffers variables container."""
-    if variables_container is None:
-        return None
-    meta = _API_TO_FB_METADATA.get(name)
-    if not meta:
-        return None
-    var_id, altitude, aggregation_id = meta
-    # Try exact match first
-    for i in range(variables_container.VariablesLength()):
-        var = variables_container.Variables(i)
-        if (var is not None 
-            and var.Variable() == var_id 
-            and var.Altitude() == altitude 
-            and var.Aggregation() == aggregation_id):
-            return var
-    # Fall back to matching variable and aggregation (ignoring altitude)
-    for i in range(variables_container.VariablesLength()):
-        var = variables_container.Variables(i)
-        if (var is not None 
-            and var.Variable() == var_id 
-            and var.Aggregation() == aggregation_id):
-            return var
-    # Fall back to matching just variable (ignoring altitude and aggregation)
-    for i in range(variables_container.VariablesLength()):
-        var = variables_container.Variables(i)
-        if var is not None and var.Variable() == var_id:
-            return var
-    return None
+from openmeteo_sdk.Variable import Variable as OMVariable
+from openmeteo_sdk.WeatherApiResponse import WeatherApiResponse
 
 from homeassistant.components.weather import (
     ATTR_FORECAST_CLOUD_COVERAGE as CLOUD_COVERAGE,
@@ -110,6 +45,72 @@ from .const import (
     OPEN_METEO_URL,
     resolve_condition,
 )
+
+# Map API string parameter to FlatBuffers Variable identifiers: (variable_id, altitude, aggregation_id)
+_API_TO_FB_METADATA = {
+    # Current/Hourly
+    "weather_code": (OMVariable.weather_code, 0, OMAggregation.none),
+    "is_day": (OMVariable.is_day, 0, OMAggregation.none),
+    "cloud_cover": (OMVariable.cloud_cover, 0, OMAggregation.none),
+    "relative_humidity_2m": (OMVariable.relative_humidity, 2, OMAggregation.none),
+    "apparent_temperature": (OMVariable.apparent_temperature, 2, OMAggregation.none),
+    "dew_point_2m": (OMVariable.dew_point, 2, OMAggregation.none),
+    "precipitation": (OMVariable.precipitation, 0, OMAggregation.none),
+    "pressure_msl": (OMVariable.pressure_msl, 0, OMAggregation.none),
+    "temperature_2m": (OMVariable.temperature, 2, OMAggregation.none),
+    "visibility": (OMVariable.visibility, 0, OMAggregation.none),
+    "wind_gusts_10m": (OMVariable.wind_gusts, 10, OMAggregation.none),
+    "wind_speed_10m": (OMVariable.wind_speed, 10, OMAggregation.none),
+    "precipitation_probability": (OMVariable.precipitation_probability, 0, OMAggregation.none),
+    "uv_index": (OMVariable.uv_index, 0, OMAggregation.none),
+    "wind_direction_10m": (OMVariable.wind_direction, 10, OMAggregation.none),
+
+    # Daily
+    "cloud_cover_mean": (OMVariable.cloud_cover, 0, OMAggregation.mean),
+    "relative_humidity_2m_mean": (OMVariable.relative_humidity, 2, OMAggregation.mean),
+    "apparent_temperature_mean": (OMVariable.apparent_temperature, 2, OMAggregation.mean),
+    "dew_point_2m_mean": (OMVariable.dew_point, 2, OMAggregation.mean),
+    "precipitation_sum": (OMVariable.precipitation, 0, OMAggregation.sum),
+    "pressure_msl_mean": (OMVariable.pressure_msl, 0, OMAggregation.mean),
+    "temperature_2m_max": (OMVariable.temperature, 2, OMAggregation.maximum),
+    "temperature_2m_min": (OMVariable.temperature, 2, OMAggregation.minimum),
+    "wind_gusts_10m_max": (OMVariable.wind_gusts, 10, OMAggregation.maximum),
+    "wind_speed_10m_max": (OMVariable.wind_speed, 10, OMAggregation.maximum),
+    "precipitation_probability_max": (OMVariable.precipitation_probability, 0, OMAggregation.maximum),
+    "uv_index_max": (OMVariable.uv_index, 0, OMAggregation.maximum),
+    "wind_direction_10m_dominant": (OMVariable.wind_direction, 10, OMAggregation.dominant),
+}
+
+
+def _find_variable(variables_container, name: str):
+    """Find a variable by name in the FlatBuffers variables container."""
+    if variables_container is None:
+        return None
+    meta = _API_TO_FB_METADATA.get(name)
+    if not meta:
+        return None
+    var_id, altitude, aggregation_id = meta
+    # Try exact match first
+    for i in range(variables_container.VariablesLength()):
+        var = variables_container.Variables(i)
+        if (var is not None
+            and var.Variable() == var_id
+            and var.Altitude() == altitude
+            and var.Aggregation() == aggregation_id):
+            return var
+    # Fall back to matching variable and aggregation (ignoring altitude)
+    for i in range(variables_container.VariablesLength()):
+        var = variables_container.Variables(i)
+        if (var is not None
+            and var.Variable() == var_id
+            and var.Aggregation() == aggregation_id):
+            return var
+    # Fall back to matching just variable (ignoring altitude and aggregation)
+    for i in range(variables_container.VariablesLength()):
+        var = variables_container.Variables(i)
+        if var is not None and var.Variable() == var_id:
+            return var
+    return None
 
 type OpenMeteoCustomConfigEntry = ConfigEntry[OpenMeteoCustomDataUpdateCoordinator]
 
@@ -248,7 +249,6 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[OpenMeteoData])
         # Check for JSON error response
         if data.startswith(b"{"):
             try:
-                import json
                 err_json = json.loads(data)
                 reason = err_json.get("reason", "Unknown API error")
                 raise UpdateFailed(f"Open-Meteo API error: {reason}")

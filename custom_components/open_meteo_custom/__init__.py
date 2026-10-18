@@ -3,7 +3,10 @@
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .coordinator import OpenMeteoCustomConfigEntry, OpenMeteoCustomDataUpdateCoordinator
+from .coordinator import (
+    OpenMeteoCustomConfigEntry,
+    OpenMeteoCustomDataUpdateCoordinator,
+)
 
 PLATFORMS = [Platform.WEATHER, Platform.SENSOR]
 
