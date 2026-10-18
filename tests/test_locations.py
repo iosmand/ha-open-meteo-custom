@@ -185,8 +185,6 @@ async def main():
             print("❌ Some integration tests failed.")
             sys.exit(1)
 
-if __name__ == "__main__":
-    asyncio.run(main())
 
 if __name__ == "__main__":
     asyncio.run(main())
