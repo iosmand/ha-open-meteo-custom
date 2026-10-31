@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 import json
 from typing import override
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from openmeteo_sdk.Aggregation import Aggregation as OMAggregation
 from openmeteo_sdk.Variable import Variable as OMVariable
@@ -282,7 +283,16 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[OpenMeteoData])
             )
 
         offset_sec = response.UtcOffsetSeconds()
-        tz = timezone(timedelta(seconds=offset_sec)) if offset_sec is not None else timezone.utc
+        fixed_tz = timezone(timedelta(seconds=offset_sec)) if offset_sec is not None else timezone.utc
+        tz = fixed_tz
+        timezone_name = response.Timezone()
+        if timezone_name:
+            try:
+                if isinstance(timezone_name, bytes):
+                    timezone_name = timezone_name.decode("utf-8")
+                tz = ZoneInfo(timezone_name)
+            except (UnicodeDecodeError, ValueError, ZoneInfoNotFoundError):
+                LOGGER.warning("Invalid Open-Meteo timezone; using response UTC offset")
 
         # Current weather
         current_is_day: bool = True
@@ -310,7 +320,17 @@ class OpenMeteoCustomDataUpdateCoordinator(DataUpdateCoordinator[OpenMeteoData])
             interval = daily.Interval()
             if interval > 0:
                 daily_forecast = [
-                    Forecast(datetime=datetime.fromtimestamp(ts, tz=tz).isoformat())
+                    Forecast(
+                        # Daily FlatBuffers timestamps encode calendar days at a
+                        # fixed response offset, not DST-aware midnight instants.
+                        datetime=(
+                            datetime.combine(
+                                datetime.fromtimestamp(ts, tz=fixed_tz).date(),
+                                time.min,
+                                tzinfo=tz,
+                            ) if tz is not fixed_tz else datetime.fromtimestamp(ts, tz=tz)
+                        ).isoformat()
+                    )
                     for ts in range(daily.Time(), daily.TimeEnd(), interval)
                 ]
             wc_var = _find_variable(daily, "weather_code")
